@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middlewares/auth.middleware');
-const { addDevice } = require('../controllers/auth.controller');
+const { protect } = require('../middlewares/apikeyauth.middleware');
+const { addDevice } = require('../controllers/device.controller');
 
-router.post('/add', protect, addDevice);
+// router.post('/add', protect, addDevice);
 
 module.exports = router;
