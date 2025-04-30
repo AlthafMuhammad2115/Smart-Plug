@@ -1,12 +1,17 @@
 const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   });
 };
+
+function generateApiKey() {
+  return 'smart-' + crypto.randomBytes(4).toString('hex') + '-' + crypto.randomBytes(4).toString('hex') + '-' + crypto.randomBytes(4).toString('hex') + '-' + crypto.randomBytes(4).toString('hex'); // 64-character key
+}
 
 exports.register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -16,7 +21,9 @@ exports.register = async (req, res) => {
     if (existingUser) return res.status(400).json({ message: 'Email already registered' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, email, password: hashedPassword });
+    const apiKey = generateApiKey();
+    const hashedKey = await bcrypt.hash(apiKey, 10);
+    const newUser = new User({ username, email, password: hashedPassword, key: hashedKey });
     await newUser.save();
 
     const token = generateToken(newUser._id);
@@ -24,7 +31,7 @@ exports.register = async (req, res) => {
     res.status(201).json({
       message: 'User registered successfully',
       token,
-      user: { id: newUser._id, username: newUser.username, email: newUser.email }
+      user: { id: newUser._id, username: newUser.username, email: newUser.email, key: apiKey }
     });
   } catch (err) {
     res.status(500).json({ message: 'Registration failed', error: err.message });
