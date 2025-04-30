@@ -1,11 +1,8 @@
 const express = require('express');
-const router = express.Router();    
+const router = express.Router();
+const { protect } = require('../middlewares/apikeyauth.middleware');
+const { addDevice } = require('../controllers/device.controller');
 
-router.post('/add', (req, res) => {
-  // Logic to add a device
-  res.status(201).json({ message: 'Device added successfully' });
-});
+router.post('/add', protect, addDevice);
 
 module.exports = router;
-
-
