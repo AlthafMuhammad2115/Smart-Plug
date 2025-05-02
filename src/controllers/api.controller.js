@@ -15,14 +15,13 @@ exports.PlugControll = async (req, res) => {
             return res.status(404).json({ message: 'Device not found' });
         }
 
-        // 🔌 MQTT client setup
+        // MQTT client setup
         const mqttClient = mqtt.connect(process.env.MQTT_BROKER_URL, {
             clientId: `mqtt_${Math.random().toString(16).slice(2)}`,
             clean: true,
             connectTimeout: 4000,
             reconnectPeriod: 1000,
         });
-
         mqttClient.on('connect', () => {
             console.log('Connected to MQTT broker');
 
