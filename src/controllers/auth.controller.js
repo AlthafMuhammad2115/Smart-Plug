@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const apiKey = generateApiKey();
-    const hashedKey = await bcrypt.hash(apiKey, 10);
+    const hashedKey = crypto.createHash("sha256").update(apiKey).digest("hex");
     const newUser = new User({ username, email, password: hashedPassword, key: hashedKey });
     await newUser.save();
 

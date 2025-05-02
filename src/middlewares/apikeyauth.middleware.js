@@ -10,8 +10,7 @@ const verifyApiKey = async (req, res, next) => {
 
   try {
     const hashedKey = crypto.createHash("sha256").update(apiKey).digest("hex");
-    const user = await User.findOne({ hashedKey });
-
+    const user = await User.findOne({ key: hashedKey });
     if (!user) {
       return res.status(401).json({ message: 'Invalid API key' });
     }
