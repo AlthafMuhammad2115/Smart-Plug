@@ -7,6 +7,9 @@ exports.addDevice = async (req, res) => {
     const userId = req.user._id;
     try {
         const mqttClient = mqtt.connect(process.env.MQTT_BROKER_URL, {
+            username: process.env.MQTT_USERNAME,
+            password: process.env.MQTT_PASSWORD,
+            port: parseInt(process.env.MQTT_PORT),
             clientId: `mqtt_${Math.random().toString(16).slice(3)}`,
             clean: true,
             connectTimeout: 4000,
