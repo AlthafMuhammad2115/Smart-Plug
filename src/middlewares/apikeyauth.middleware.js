@@ -1,5 +1,5 @@
 const User = require('../models/user.model');
-const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const verifyApiKey = async (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
@@ -9,7 +9,7 @@ const verifyApiKey = async (req, res, next) => {
   }
 
   try {
-    const hashedKey = await bcrypt.hash(apiKey, 10)
+    const hashedKey = crypto.createHash("sha256").update(apiKey).digest("hex");
     const user = await User.findOne({ hashedKey });
 
     if (!user) {
