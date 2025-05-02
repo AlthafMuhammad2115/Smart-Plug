@@ -2,6 +2,7 @@ const User = require('../models/user.model');
 const crypto = require('crypto');
 
 const verifyApiKey = async (req, res, next) => {
+  console.log("API key middleware triggered");
   const apiKey = req.headers['x-api-key'];
 
   if (!apiKey) {
@@ -18,7 +19,7 @@ const verifyApiKey = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error', error: error });
   }
 }
 

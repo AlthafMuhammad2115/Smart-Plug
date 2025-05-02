@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const electricalSchema = new mongoose.Schema({
+const consumptionSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true,
@@ -28,4 +28,4 @@ const electricalSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('electrical', electricalSchema);
+module.exports = mongoose.model('Consumption', consumptionSchema);

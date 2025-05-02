@@ -3,9 +3,9 @@ const mqtt = require("mqtt");
 
 exports.PlugControll = async (req, res) => {
     try {
-        const { deviceId,topic, amount } = req.body;
+        const { deviceId, mode, value } = req.body;
         const userId = req.user._id;
-        const topicName = `${deviceId}/${topic}`;
+        const topicName = `${deviceId}/${mode}`;
 
         // Validate device ownership
         const deviceDetails = await deviceModel.findOne({ deviceId, userId });
@@ -25,41 +25,41 @@ exports.PlugControll = async (req, res) => {
         });
 
         mqttClient.on('connect', () => {
-            console.log('✅ Connected to MQTT broker');
+            console.log('Connected to MQTT broker');
 
-            mqttClient.publish(topicName, amount.toString(), { qos: 1 }, async (err) => {
+            mqttClient.publish(topicName, value.toString(), { qos: 1 }, async (err) => {
                 mqttClient.end();
 
                 if (err) {
-                    console.error('❌ Failed to publish message:', err);
+                    console.error('Failed to publish message:', err);
                     return res.status(500).json({ message: 'Failed to publish message', error: err.message });
                 }
 
-                console.log('📨 Message published:', amount);
+                console.log('Message published:', value);
 
                 try {
                     await deviceModel.updateOne(
                         { deviceId, userId },
                         { $set: { status: 1 } }
                     );
-                    console.log('✅ Device status updated to 1');
+                    console.log('Device status updated to 1');
                 } catch (updateErr) {
-                    console.error('❌ Failed to update device status:', updateErr);
+                    console.error('Failed to update device status:', updateErr);
                     return res.status(500).json({ message: 'Published but failed to update device status', error: updateErr.message });
                 }
 
-                return res.status(200).json({ message: 'Message published and device status updated', amount });
+                return res.status(200).json({ message: 'Message published and device status updated', value });
             });
         });
 
         mqttClient.on('error', (err) => {
-            console.error('❌ MQTT connection error:', err);
+            console.error('MQTT connection error:', err);
             mqttClient.end();
             return res.status(500).json({ message: 'MQTT connection error', error: err.message });
         });
 
     } catch (error) {
-        console.error('❌ Server error:', error);
+        console.error('Server error:', error);
         return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
