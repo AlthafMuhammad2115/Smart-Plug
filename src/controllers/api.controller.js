@@ -3,13 +3,13 @@ const mqtt = require("mqtt");
 
 exports.PlugControll = async (req, res) => {
     try {
-        const { deviceId, payload } = req.body;
+        const { deviceId, amount } = req.body;
         const userId = req.user._id;
         console.log(userId);
         const topic = `${deviceId}/${req.topic}`
 
         // 🔍 Validate device ownership
-        const deviceDetails = await deviceModel.findOne({ deviceId: deviceId, userId: new mongoose.Types.ObjectId(userId) });
+        const deviceDetails = await deviceModel.findOne({ deviceId: deviceId, userId: userId });
 
         if (!deviceDetails) {
             return res.status(404).json({ message: 'Device not found' });
@@ -26,17 +26,30 @@ exports.PlugControll = async (req, res) => {
         mqttClient.on('connect', () => {
             console.log('Connected to MQTT broker');
 
-            mqttClient.publish(topic, payload, { qos: 1 }, (err) => {
+            mqttClient.publish(topic, amount.toString(), { qos: 1 }, async (err) => {
                 mqttClient.end(); // Always close connection after publish
-
+            
                 if (err) {
                     console.error('Failed to publish message:', err);
                     return res.status(500).json({ message: 'Failed to publish message', error: err.message });
                 }
-
-                console.log('Message sent:', payload);
-                return res.status(200).json({ message: 'Message published successfully', payload });
+            
+                console.log('Message sent:', amount);
+            
+                try {
+                    await deviceModel.updateOne(
+                        { deviceId: deviceId, userId: userId },
+                        { $set: { status: 1 } }
+                    );
+                    console.log('Device status updated to 1');
+                } catch (updateErr) {
+                    console.error('Failed to update device status:', updateErr);
+                    return res.status(500).json({ message: 'Published but failed to update device status', error: updateErr.message });
+                }
+            
+                return res.status(200).json({ message: 'Message published successfully and device status updated', amount });
             });
+            
         });
 
         mqttClient.on('error', (err) => {

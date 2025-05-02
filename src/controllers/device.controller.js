@@ -36,7 +36,7 @@ exports.addDevice = async (req, res) => {
             console.log('Received message:', topic, message.toString());
             if (topic === `${deviceId}/register/response`) {
                 console.log('Device available for register:', message.toString());
-                const device = await Device.create({ deviceId, userId });
+                const device = await Device.create({ deviceId, userId ,status:0});
                 if (!device) {
                     console.error('Failed to create device:', response);
                     mqttClient.end();
@@ -53,5 +53,40 @@ exports.addDevice = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ message: 'Failed to add device', error: err.message });
+    }
+};
+
+exports.getDeviceStatus =async(req,res)=>{
+    const {userId,deviceId}=req.body;
+
+    try{
+        const device=await Device.findOne({userId,deviceId});
+
+        if(!device)return res.status(404).json({message:'Device Not Found'});
+    
+        res.status(200).json({status:device.status,message:'Device Status Sent'})
+    }catch(err){
+        res.status(500).json({ message: 'Failed to Fetch Device Status', error: err.message });
+    }
+
+}
+
+exports.setDeviceStatus = async (req, res) => {
+    const { deviceId, status } = req.body;
+
+    try {
+        const device = await Device.findOne({ deviceId });
+
+        if (!device) {
+            return res.status(404).json({ message: 'Device Not Found' });
+        }
+
+        device.status = status;
+        await device.save();
+
+        return res.status(200).json({ message: 'Device status updated', device });
+    } catch (error) {
+        console.error('Error updating device status:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
