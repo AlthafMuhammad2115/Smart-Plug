@@ -15,6 +15,19 @@ const deviceSchema = new mongoose.Schema({
   status:{
     type:Number,
     required:true
+  },
+  totalConsumption:{
+    type:Number,
+    required:true
+  },
+  deviceName:{
+    type:String,
+    required:true
+  },
+  isOnline:{
+    type:Boolean,
+    required:true,
+    default:true
   }
 }, { timestamps: true });
 
