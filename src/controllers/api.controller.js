@@ -5,10 +5,11 @@ exports.PlugControll = async (req, res) => {
     try {
         const { deviceId, payload } = req.body;
         const userId = req.user._id;
-        const topic=`${deviceId}/${req.topic}`
-        
+        console.log(userId);
+        const topic = `${deviceId}/${req.topic}`
+
         // 🔍 Validate device ownership
-        const deviceDetails = await deviceModel.findOne({ deviceId, userId });
+        const deviceDetails = await deviceModel.findOne({ deviceId: deviceId, userId: new mongoose.Types.ObjectId(userId) });
 
         if (!deviceDetails) {
             return res.status(404).json({ message: 'Device not found' });
