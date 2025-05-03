@@ -63,7 +63,7 @@ exports.addDevice = async (req, res) => {
 
 exports.getDeviceDetail = async (req, res) => {
     const deviceId = req.params.id;
-    const { userId } = req.user._id;
+    const userId  = req.user._id;
 
     try {
         const device = await Device.findOne({ userId, deviceId });

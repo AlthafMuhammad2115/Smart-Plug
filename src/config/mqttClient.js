@@ -20,6 +20,25 @@ const connectMqtt = () => {
         console.log("MQTT connection error: ", err);
     });
 
+    const topic = 'device/1122/metrics';
+
+    setInterval(() => {
+        const data = {
+            voltage: Math.floor(Math.random() * 100),
+            current: Math.floor(Math.random() * 50),
+            power: Math.floor(Math.random() * 100),
+            energy: Math.floor(Math.random() * 1000),
+        };
+
+        mqttClient.publish(topic, JSON.stringify(data), { qos: 1 }, (err) => {
+            if (err) {
+                console.error('Failed to publish:', err);
+            } else {
+                console.log('Published data:', data);
+            }
+        });
+    }, 1000);
+
     return mqttClient;
 };
 
