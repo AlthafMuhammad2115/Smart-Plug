@@ -14,11 +14,13 @@ const deviceSchema = new mongoose.Schema({
   },
   status:{
     type:Number,
-    required:true
+    required:true,
+    default:0
   },
   totalConsumption:{
     type:Number,
-    required:true
+    required:true,
+    default:0
   },
   deviceName:{
     type:String,
