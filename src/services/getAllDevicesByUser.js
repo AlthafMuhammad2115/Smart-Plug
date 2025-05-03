@@ -6,6 +6,7 @@ const getAllDevicesByUser = async (userId) => {
         if (!devices) {
             return null;
         }
+        console.log('Devices fetched successfully:', devices);
         return devices;
     } catch (err) {
         console.error('Error fetching devices:', err);

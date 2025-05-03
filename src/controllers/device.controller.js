@@ -4,7 +4,7 @@ const { getMqttClient } = require('../config/mqttClient');
 const getAllDevicesByUser = require('../services/getAllDevicesByUser');
 
 exports.addDevice = async (req, res) => {
-    const { deviceId } = req.body;
+    const { deviceId, deviceName } = req.body;
     const userId = req.user._id;
 
     try {
@@ -13,10 +13,36 @@ exports.addDevice = async (req, res) => {
             console.error('Failed to connect MQTT client');
             return res.status(500).json({ message: 'Failed to connect to MQTT client' });
         }
-        const topic = `${deviceId}/register`;
+
+        const registerTopic = `${deviceId}/register`;
+        const responseTopic = `${deviceId}/register/response`;
         const message = JSON.stringify({ userId });
 
-        mqttClient.publish(topic, message, { qos: 1 }, (err) => {
+        const waitForResponse = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                mqttClient.removeListener('message', onMessage);
+                reject(new Error('MQTT response timeout'));
+            }, 10000);
+
+            const onMessage = async (topic, payload) => {
+                if (topic === responseTopic) {
+                    clearTimeout(timeout);
+                    mqttClient.removeListener('message', onMessage);
+                    resolve(payload.toString());
+                }
+            };
+
+            mqttClient.on('message', onMessage);
+        });
+
+        await new Promise((resolve, reject) => {
+            mqttClient.subscribe(responseTopic, { qos: 1 }, (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        mqttClient.publish(registerTopic, message, { qos: 1 }, (err) => {
             if (err) {
                 console.error('Failed to publish message:', err);
                 return res.status(500).json({ message: 'Failed to register device', error: err.message });
@@ -24,31 +50,12 @@ exports.addDevice = async (req, res) => {
             console.log('Message sent:', message);
         });
 
-        mqttClient.subscribe(`${deviceId}/register/response`, (err) => {
-            if (err) {
-                console.error('Failed to subscribe to topic:', err);
-                return res.status(500).json({ message: 'Failed to subscribe to topic', error: err.message });
-            }
-            console.log(`Subscribed to topic: ${deviceId}/register/response`);
-        });
+        const mqttResponse = await waitForResponse;
+        console.log('Device available for register:', mqttResponse);
 
-        mqttClient.on('message', async (topic, message) => {
-            console.log('Received message:', topic, message.toString());
-            if (topic === `${deviceId}/register/response`) {
-                console.log('Device available for register:', message.toString());
-                const device = await Device.create({ deviceId, userId, status: 0 });
-                if (!device) {
-                    console.error('Failed to create device:', response);
-                    mqttClient.end();
-                    return res.status(500).json({ message: 'Failed to create device', error: response.error });
-                }
-                console.log('Device registered successfully:', device);
-                return res.status(200).json({ message: 'Device registered successfully' });
-            } else {
-                console.error('Device registration failed:', message.toString());
-                return res.status(500).json({ message: 'Device registration failed', error: response.error });
-            }
-        });
+        const device = await Device.create({ deviceId, userId, deviceName });
+        return res.status(200).json({ message: 'Device registered successfully', data: device });
+
     } catch (err) {
         res.status(500).json({ message: 'Failed to add device', error: err.message });
     }
@@ -56,7 +63,7 @@ exports.addDevice = async (req, res) => {
 
 exports.getDeviceDetail = async (req, res) => {
     const deviceId = req.params.id;
-    const { userId } = req.body;
+    const { userId } = req.user._id;
 
     try {
         const device = await Device.findOne({ userId, deviceId });
@@ -71,7 +78,11 @@ exports.getDeviceDetail = async (req, res) => {
 
 exports.getAllDevices = async (req, res) => {
     const userId = req.user._id;
-
+    const mqttClient = getMqttClient();
+    if (!mqttClient) {
+        console.error('Failed to connect MQTT client');
+        return res.status(500).json({ message: 'Failed to connect to MQTT client' });
+    }
     try {
         const devices = await getAllDevicesByUser(userId);
         if (!devices) return res.status(404).json({ message: 'Devices Not Found' });
@@ -88,6 +99,7 @@ exports.getAllDevices = async (req, res) => {
         mqttClient.on('message', async (topic, message) => {
             console.log('Received message:', topic, message.toString());
             const deviceId = topic.split('/')[0];
+            console.log('Device ID:', deviceId);
             const device = await Device.findOne({ deviceId });
             if (!device) {
                 console.error('Device not found:', deviceId);
@@ -96,9 +108,10 @@ exports.getAllDevices = async (req, res) => {
             const status = message.toString() === 'true' ? true : false;
             device.isOnline = status;
             await device.save();
+            devices.find(d => d.deviceId === deviceId).isOnline = status;
             console.log(`Device ${deviceId} is online: ${status}`);
         });
-        
+
         res.status(200).json({ data: devices, message: 'Devices data Sent' })
     } catch (err) {
         res.status(500).json({ message: 'Failed to Fetch Devices', error: err.message });

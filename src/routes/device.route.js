@@ -6,9 +6,9 @@ const { verifyApiKey }= require('../middlewares/apikeyauth.middleware');
 
 router.post('/add', protect, addDevice);
 router.post('/setStatus', verifyApiKey, setDeviceStatus);
-router.post('/devices/:id', protect, getDeviceDetail);
+router.get('/devices/:id', protect, getDeviceDetail);
 router.post('/setConsumption', verifyApiKey, setConsumpion);
-router.post('/getAllDevices', protect, getAllDevices);
+router.get('/getAllDevices', protect, getAllDevices);
 router.post('/setIsOnline', verifyApiKey, setIsOnline); 
 
 module.exports = router;
