@@ -2,6 +2,7 @@ const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const generateApiKey = require('../utils/generateApiKey'); 
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
@@ -9,9 +10,7 @@ const generateToken = (userId) => {
   });
 };
 
-function generateApiKey() {
-  return 'smart-' + crypto.randomBytes(4).toString('hex') + '-' + crypto.randomBytes(4).toString('hex') + '-' + crypto.randomBytes(4).toString('hex') + '-' + crypto.randomBytes(4).toString('hex'); // 64-character key
-}
+
 
 exports.register = async (req, res) => {
   const { username, email, password } = req.body;

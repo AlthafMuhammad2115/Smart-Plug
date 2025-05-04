@@ -30,6 +30,11 @@ const deviceSchema = new mongoose.Schema({
     type:Boolean,
     required:true,
     default:true
+  },
+  key: {
+    type: String,
+    required: true,
+    unique: true
   }
 }, { timestamps: true });
 

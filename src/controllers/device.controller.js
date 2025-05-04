@@ -2,11 +2,14 @@ const Device = require('../models/devices.model');
 const consumptionModel = require('../models/consumption.model');
 const { getMqttClient } = require('../config/mqttClient');
 const getAllDevicesByUser = require('../services/getAllDevicesByUser');
+const generateApiKey = require('../utils/generateApiKey');
+const crypto = require('crypto');
 
 exports.addDevice = async (req, res) => {
     const { deviceId, deviceName } = req.body;
     const userId = req.user._id;
-
+    const apiKey = generateApiKey();
+    const hashedKey = crypto.createHash("sha256").update(apiKey).digest("hex");
     try {
         const mqttClient = getMqttClient();
         if (!mqttClient) {
@@ -16,7 +19,7 @@ exports.addDevice = async (req, res) => {
 
         const registerTopic = `${deviceId}/register`;
         const responseTopic = `${deviceId}/register/response`;
-        const message = JSON.stringify({ userId });
+        const message = JSON.stringify({ apiKey });
 
         const waitForResponse = new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -53,7 +56,7 @@ exports.addDevice = async (req, res) => {
         const mqttResponse = await waitForResponse;
         console.log('Device available for register:', mqttResponse);
 
-        const device = await Device.create({ deviceId, userId, deviceName });
+        const device = await Device.create({ deviceId, userId, deviceName, key: hashedKey });
         return res.status(200).json({ message: 'Device registered successfully', data: device });
 
     } catch (err) {
@@ -63,7 +66,7 @@ exports.addDevice = async (req, res) => {
 
 exports.getDeviceDetail = async (req, res) => {
     const deviceId = req.params.id;
-    const userId  = req.user._id;
+    const userId = req.user._id;
 
     try {
         const device = await Device.findOne({ userId, deviceId });
@@ -98,18 +101,21 @@ exports.getAllDevices = async (req, res) => {
 
         mqttClient.on('message', async (topic, message) => {
             console.log('Received message:', topic, message.toString());
-            const deviceId = topic.split('/')[0];
-            console.log('Device ID:', deviceId);
-            const device = await Device.findOne({ deviceId });
-            if (!device) {
-                console.error('Device not found:', deviceId);
-                return;
+            const subTopic = topic.split('/')[2];
+            if (subTopic === `isOnline`) {
+                const deviceId = topic.split('/')[0];
+                console.log('Device ID:', deviceId);
+                const device = await Device.findOne({ deviceId });
+                if (!device) {
+                    console.error('Device not found:', deviceId);
+                    res.status(500).json({ message: 'No device Found', error: err.message });
+                }
+                const status = message.toString() === 'true' ? true : false;
+                device.isOnline = status;
+                await device.save();
+                devices.find(d => d.deviceId === deviceId).isOnline = status;
+                console.log(`Device ${deviceId} is online: ${status}`);
             }
-            const status = message.toString() === 'true' ? true : false;
-            device.isOnline = status;
-            await device.save();
-            devices.find(d => d.deviceId === deviceId).isOnline = status;
-            console.log(`Device ${deviceId} is online: ${status}`);
         });
 
         res.status(200).json({ data: devices, message: 'Devices data Sent' })
