@@ -19,7 +19,7 @@ exports.addDevice = async (req, res) => {
 
         const registerTopic = `${deviceId}/register`;
         const responseTopic = `${deviceId}/register/response`;
-        const message = JSON.stringify({ apiKey });
+        const message = apiKey;
 
         const waitForResponse = new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -113,7 +113,7 @@ exports.getAllDevices = async (req, res) => {
                 const status = message.toString() === 'true' ? true : false;
                 device.isOnline = status;
                 await device.save();
-                devices.find(d => d.deviceId === deviceId).isOnline = status;
+                // devices.find(d => d.deviceId === deviceId).isOnline = status;
                 console.log(`Device ${deviceId} is online: ${status}`);
             }
         });
