@@ -12,4 +12,4 @@ router.post('/setConsumption', verifyDeviceApiKey, setConsumpion);
 router.get('/getAllDevices', protect, getAllDevices);
 router.post('/setIsOnline', verifyDeviceApiKey, setIsOnline); 
 
-module.exports = router;
+module.exports = router; 
