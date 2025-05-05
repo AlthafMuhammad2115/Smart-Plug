@@ -14,7 +14,7 @@ const verifyDeviceApiKey = async (req, res, next) => {
     if (!device) {
       return res.status(401).json({ message: 'Invalid API key' });
     }
-    const user = await User.findById(device.userId);
+    const user = await User.findOne({_id:device.userId});
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
